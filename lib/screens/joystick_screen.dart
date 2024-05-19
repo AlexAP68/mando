@@ -1,78 +1,61 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
-import 'package:web_socket_channel/io.dart';
+import 'package:get/get.dart';
+import 'package:mando/controller/joystickcontrolador.dart';
 
-class JoystickScreen extends StatefulWidget {
-  final String ipAddress;
-
-  JoystickScreen({required this.ipAddress});
-
-  @override
-  _JoystickScreenState createState() => _JoystickScreenState();
-}
-
-class _JoystickScreenState extends State<JoystickScreen> {
-  late IOWebSocketChannel channel;
-  bool isConnected = false;
-  late Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    channel = IOWebSocketChannel.connect('ws://${widget.ipAddress}:7890');
-    _startTimer();
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    channel.sink.close();
-    super.dispose();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 20), (timer) {
-      refreshConnection();
-    });
-  }
-
-  void onDirectionChanged(double x, double y) {
-    channel.sink.add('$x,$y');
-    print('Sent Data: $x, $y');
-  }
-
-  void refreshConnection() {
-    // Close the existing channel and connect again
-    channel.sink.close();
-    setState(() {
-      channel = IOWebSocketChannel.connect('ws://${widget.ipAddress}:7890');
-      isConnected = true;
-    });
-    print('Connection Status: Connected');
-    print('ip'+ widget.ipAddress);
-  }
+class JoystickScreen extends StatelessWidget {
+  final JoystickControlador joystickController = Get.find();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Unity Flutter Controller - Joystick'),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Joystick(
-              listener: (details) => onDirectionChanged(details.x, details.y),
-            ),
-             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => refreshConnection(),
-              child: Text('Refresh Connection'),
-            ),
-          ],
+    // Forzar la orientación horizontal
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.landscapeRight,
+      DeviceOrientation.landscapeLeft,
+    ]);
+
+    return WillPopScope(
+      onWillPop: () async {
+        // Restaurar la orientación cuando se salga de la pantalla
+        SystemChrome.setPreferredOrientations([
+          DeviceOrientation.portraitUp,
+          DeviceOrientation.portraitDown,
+        ]);
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Unity Flutter Controller - Joystick'),
+        ),
+        body: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              // Joystick a la izquierda
+              Joystick(
+                listener: (details) => joystickController.onDirectionChanged(details.x, details.y),
+              ),
+              // Botón a la derecha
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => joystickController.refreshConnection(),
+                    child: Text('Refresh Connection'),
+                  ),
+                  SizedBox(height: 20),
+                  Obx(() => Text(
+                    joystickController.isConnected.value ? 'Connected' : 'Disconnected',
+                    style: TextStyle(
+                      color: joystickController.isConnected.value ? Colors.green : Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
