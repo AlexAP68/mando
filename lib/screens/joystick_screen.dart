@@ -18,6 +18,12 @@ class _JoystickScreenState extends State<JoystickScreen> {
   JoystickDirection currentDirection = JoystickDirection(0.0, 0.0);
 
   @override
+  void initState() {
+    super.initState();
+    _startSendingDirections();
+  }
+
+  @override
   void dispose() {
     _timer?.cancel();
     super.dispose();
@@ -29,15 +35,15 @@ class _JoystickScreenState extends State<JoystickScreen> {
       if (currentDirection != lastDirection) {
         print('Sending direction: x=${currentDirection.x}, y=${currentDirection.y}');
         joystickController.onDirectionChanged(currentDirection.x, currentDirection.y);
-        lastDirection = currentDirection;
+        lastDirection = JoystickDirection(currentDirection.x, currentDirection.y);
       }
     });
   }
 
-  void _stopSendingDirections() {
-    _timer?.cancel();
-    currentDirection = JoystickDirection(0.0, 0.0);
-    joystickController.onDirectionChanged(0.0, 0.0); // Enviar parada
+  void _updateDirection(JoystickDirection newDirection) {
+    setState(() {
+      currentDirection = newDirection;
+    });
   }
 
   @override
@@ -59,7 +65,7 @@ class _JoystickScreenState extends State<JoystickScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Unity Flutter Controller - Joystick'),
+          title: Obx(() => Text('Unity Flutter Controller - Player ${joystickController.playerNumber.value}')),
         ),
         body: Center(
           child: Row(
@@ -80,14 +86,12 @@ class _JoystickScreenState extends State<JoystickScreen> {
                   }
 
                   JoystickDirection newDirection = JoystickDirection(x, y);
-                  if (newDirection != lastDirection) {
-                    currentDirection = newDirection;
+
+                    _updateDirection(newDirection);
                     if (_timer == null || !_timer!.isActive) {
                       _startSendingDirections();
                     }
-                  } else if (x == 0.0 && y == 0.0) {
-                    _stopSendingDirections();
-                  }
+                  
                 },
               ),
               Column(

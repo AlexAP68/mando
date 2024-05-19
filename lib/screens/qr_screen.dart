@@ -10,18 +10,12 @@ class QRScreen extends StatelessWidget {
   Future<void> scanQR() async {
     String qrResult = await FlutterBarcodeScanner.scanBarcode(
         "#ff6666", "Cancel", true, ScanMode.QR);
-
     if (qrResult != '-1') {
-      try {
-        joystickController.connect(qrResult);
-        Get.to(() => JoystickScreen());
-      } catch (e) {
-        Get.snackbar("Error", "No se pudo conectar. Verifica la IP y vuelve a intentarlo.",
-            snackPosition: SnackPosition.BOTTOM);
-      }
+      joystickController.connect(qrResult);
+      joystickController.startReconnectTimer(); // Iniciar el temporizador de reconexión
+      Get.to(() => JoystickScreen());
     } else {
-      Get.snackbar("Error", "Escaneo cancelado",
-          snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Error', 'Invalid QR code');
     }
   }
 

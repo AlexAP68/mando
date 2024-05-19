@@ -1,15 +1,33 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/io.dart';
 
 class JoystickControlador extends GetxController {
   late IOWebSocketChannel channel;
   var isConnected = false.obs;
+  var playerNumber = 0.obs;
   late String ipAddress;
+  String? deviceIP;
   Timer? _reconnectTimer;
 
+  JoystickControlador() {
+    _getDeviceIP();
+  }
+
+  Future<void> _getDeviceIP() async {
+    for (var interface in await NetworkInterface.list()) {
+      for (var addr in interface.addresses) {
+        if (addr.type == InternetAddressType.IPv4) {
+          deviceIP = addr.address;
+          print('Device IP: $deviceIP');
+          return;
+        }
+      }
+    }
+  }
+
   void startReconnectTimer() {
-    // Intentar reconectar cada 5 segundos si no está conectado
     _reconnectTimer = Timer.periodic(Duration(seconds: 5), (timer) {
       if (!isConnected.value) {
         print('Attempting to reconnect...');
@@ -22,43 +40,58 @@ class JoystickControlador extends GetxController {
     this.ipAddress = ipAddress;
     try {
       channel = IOWebSocketChannel.connect('ws://$ipAddress:7890');
+      channel.stream.listen((message) {
+        _handleMessage(message);
+      },
+      onDone: () {
+        isConnected.value = false;
+        print('Connection closed.');
+      },
+      onError: (error) {
+        isConnected.value = false;
+        print('Connection error: $error');
+      });
       isConnected.value = true;
-      print('Connected to $ipAddress'); // Añadir log
-      // Escuchar los eventos de cierre de la conexión
-      channel.stream.listen((message) {},
-          onDone: () {
-            isConnected.value = false;
-            print('Connection closed.'); // Añadir log
-          },
-          onError: (error) {
-            isConnected.value = false;
-            print('Connection error: $error'); // Añadir log
-          });
-      // Iniciar el temporizador de reconexión después de la conexión inicial
+      print('Connected to $ipAddress');
       if (_reconnectTimer == null) {
         startReconnectTimer();
       }
+      if (deviceIP != null) {
+        channel.sink.add('register:$deviceIP');
+      }
     } catch (e) {
       isConnected.value = false;
-      print('Failed to connect: $e'); // Añadir log
+      print('Failed to connect: $e');
+    }
+  }
+
+  void _handleMessage(String message) {
+    if (message.startsWith('playerNumber:')) {
+      int number = int.parse(message.split(':')[1]);
+      playerNumber.value = number;
+      print('Assigned player number: $number');
+    } else if (message == 'error:too_many_players') {
+      Get.snackbar('Error', 'Too many players connected');
+      channel.sink.close();
+      isConnected.value = false;
     }
   }
 
   void onDirectionChanged(double x, double y) {
-    if (isConnected.value) {
-      print('Sending to WebSocket: $x, $y'); // Añadir log
-      channel.sink.add('$x,$y');
+    if (isConnected.value && playerNumber.value > 0) {
+      print('Sending to WebSocket: $x,$y');
+      channel.sink.add('$playerNumber:$x,$y');
     } else {
-      print('WebSocket not connected'); // Añadir log
+      print('WebSocket not connected or player number not assigned');
     }
   }
 
   void sendBombCommand() {
-    if (isConnected.value) {
-      print('Sending bomb command to WebSocket'); // Añadir log
-      channel.sink.add('bomb');
+    if (isConnected.value && playerNumber.value > 0) {
+      print('Sending bomb command to WebSocket');
+      channel.sink.add('$playerNumber:bomb');
     } else {
-      print('WebSocket not connected'); // Añadir log
+      print('WebSocket not connected or player number not assigned');
     }
   }
 
@@ -66,9 +99,9 @@ class JoystickControlador extends GetxController {
     if (isConnected.value) {
       channel.sink.close();
       connect(ipAddress);
-      print('Connection refreshed'); // Añadir log
+      print('Connection refreshed');
     } else {
-      print('Cannot refresh, not connected'); // Añadir log
+      print('Cannot refresh, not connected');
     }
   }
 

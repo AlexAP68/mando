@@ -1,6 +1,6 @@
 class JoystickDirection {
-  final double x;
-  final double y;
+   double x;
+   double y;
 
   JoystickDirection(this.x, this.y);
 
