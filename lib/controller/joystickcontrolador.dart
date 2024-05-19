@@ -5,55 +5,76 @@ import 'package:web_socket_channel/io.dart';
 class JoystickControlador extends GetxController {
   late IOWebSocketChannel channel;
   var isConnected = false.obs;
-  late Timer _timer;
   late String ipAddress;
+  Timer? _reconnectTimer;
 
-  void connect(String ip) {
-    ipAddress = ip;
-    if (isValidIP(ipAddress)) {
-      channel = IOWebSocketChannel.connect('ws://$ipAddress:7890');
-      _startTimer();
-      isConnected.value = true;
-      Get.toNamed('/joystick');
-    } else {
-      Get.snackbar('Error', 'Invalid IP Address');
-      Get.offNamed('/');
-    }
-  }
-
-  bool isValidIP(String ip) {
-    final RegExp ipRegExp = RegExp(
-      r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$',
-    );
-    return ipRegExp.hasMatch(ip);
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 20), (timer) {
-      refreshConnection();
+  void startReconnectTimer() {
+    // Intentar reconectar cada 5 segundos si no está conectado
+    _reconnectTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+      if (!isConnected.value) {
+        print('Attempting to reconnect...');
+        connect(ipAddress);
+      }
     });
   }
 
-  void onDirectionChanged(double x, double y) {
-    channel.sink.add('$x,$y');
-    print('Sent Data: $x, $y');
-  }
-
-  void refreshConnection() async {
+  void connect(String ipAddress) {
+    this.ipAddress = ipAddress;
     try {
-      channel.sink.close();
       channel = IOWebSocketChannel.connect('ws://$ipAddress:7890');
       isConnected.value = true;
-      print('Connection Status: Connected');
+      print('Connected to $ipAddress'); // Añadir log
+      // Escuchar los eventos de cierre de la conexión
+      channel.stream.listen((message) {},
+          onDone: () {
+            isConnected.value = false;
+            print('Connection closed.'); // Añadir log
+          },
+          onError: (error) {
+            isConnected.value = false;
+            print('Connection error: $error'); // Añadir log
+          });
+      // Iniciar el temporizador de reconexión después de la conexión inicial
+      if (_reconnectTimer == null) {
+        startReconnectTimer();
+      }
     } catch (e) {
       isConnected.value = false;
-      print('Connection Error: $e');
+      print('Failed to connect: $e'); // Añadir log
+    }
+  }
+
+  void onDirectionChanged(double x, double y) {
+    if (isConnected.value) {
+      print('Sending to WebSocket: $x, $y'); // Añadir log
+      channel.sink.add('$x,$y');
+    } else {
+      print('WebSocket not connected'); // Añadir log
+    }
+  }
+
+  void sendBombCommand() {
+    if (isConnected.value) {
+      print('Sending bomb command to WebSocket'); // Añadir log
+      channel.sink.add('bomb');
+    } else {
+      print('WebSocket not connected'); // Añadir log
+    }
+  }
+
+  void refreshConnection() {
+    if (isConnected.value) {
+      channel.sink.close();
+      connect(ipAddress);
+      print('Connection refreshed'); // Añadir log
+    } else {
+      print('Cannot refresh, not connected'); // Añadir log
     }
   }
 
   @override
   void onClose() {
-    _timer.cancel();
+    _reconnectTimer?.cancel();
     channel.sink.close();
     super.onClose();
   }
