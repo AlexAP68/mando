@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:get/get.dart';
-import 'package:mando/controller/qrcontroller.dart';
-
-
+import 'package:mando/controller/joystickcontrolador.dart';
+import 'package:mando/screens/joystick_screen.dart';
 
 class QRScreen extends StatelessWidget {
-  final QRController controller = Get.put(QRController());
+  final JoystickControlador joystickController = Get.put(JoystickControlador());
+
+  Future<void> scanQR() async {
+    String qrResult = await FlutterBarcodeScanner.scanBarcode(
+        "#ff6666", "Cancel", true, ScanMode.QR);
+    if (qrResult != '-1') {
+      joystickController.connect(qrResult);
+      joystickController.startReconnectTimer(); // Iniciar el temporizador de reconexión
+      Get.to(() => JoystickScreen());
+    } else {
+      Get.snackbar('Error', 'Invalid QR code');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -39,10 +39,6 @@ dependencies:
   flutter_joystick: ^0.0.4
   web_socket_channel: ^2.4.5
   get: ^4.6.6
-  flutter_screenutil: ^5.9.0
-  connectivity_plus: ^6.0.3
-  get_ip_address: ^0.0.6
-  network_info_plus: ^5.0.3
 
 dev_dependencies:
   flutter_test:
