@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mando/screens/qr_screen.dart';
 import 'package:mando/screens/joystick_screen.dart';
-import 'package:mando/controller/joystickcontrolador.dart';
+
 
 void main() {
   runApp(MyApp());

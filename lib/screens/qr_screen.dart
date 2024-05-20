@@ -30,7 +30,7 @@ class QRScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: controller.scanQR,
+              onPressed: () => scanQR(),
               child: Text('Scan QR Code to Connect'),
             ),
           ],
