@@ -1,79 +1,63 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
-import 'package:web_socket_channel/io.dart';
+import 'package:mando/controller/joystickcontroller.dart' as my_controller;
 
-class JoystickScreen extends StatefulWidget {
+class JoystickScreen extends StatelessWidget {
   final String ipAddress;
 
-  JoystickScreen({required this.ipAddress});
-
-  @override
-  _JoystickScreenState createState() => _JoystickScreenState();
-}
-
-class _JoystickScreenState extends State<JoystickScreen> {
-  late IOWebSocketChannel channel;
-  bool isConnected = false;
-  late Timer _timer;
-
-  @override
-  void initState() {
-    super.initState();
-    channel = IOWebSocketChannel.connect('ws://${widget.ipAddress}:7890');
-    _startTimer();
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    channel.sink.close();
-    super.dispose();
-  }
-
-  void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 20), (timer) {
-      refreshConnection();
-    });
-  }
-
-  void onDirectionChanged(double x, double y) {
-    channel.sink.add('$x,$y');
-    print('Sent Data: $x, $y');
-  }
-
-  void refreshConnection() {
-    // Close the existing channel and connect again
-    channel.sink.close();
-    setState(() {
-      channel = IOWebSocketChannel.connect('ws://${widget.ipAddress}:7890');
-      isConnected = true;
-    });
-    print('Connection Status: Connected');
-    print('ip'+ widget.ipAddress);
+  JoystickScreen({required this.ipAddress}) {
+    Get.put(my_controller.JoystickController(ipAddress));
   }
 
   @override
   Widget build(BuildContext context) {
+    final my_controller.JoystickController controller = Get.find();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Unity Flutter Controller - Joystick'),
       ),
       body: Center(
-        child: Column(
+        child: Obx(() => Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Joystick(
-              listener: (details) => onDirectionChanged(details.x, details.y),
+            // Joystick a la izquierda en un contenedor centrado
+            Expanded(
+              flex: 5, // Proporción para el joystick
+              child: Center(  // Asegura que el Joystick esté centrado
+                child: Container(
+                  width: 200, // Incrementa el tamaño si es necesario
+                  height: 200,
+                  alignment: Alignment.center, // Alineación central
+                  child: Joystick(
+                    listener: (details) => controller.onDirectionChanged(details.x, details.y),
+                  ),
+                ),
+              ),
             ),
-             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => refreshConnection(),
-              child: Text('Refresh Connection'),
+            Spacer(), // Espacio entre el joystick y el botón
+            // Botón a la derecha
+            Expanded(
+              flex: 2, // Proporción para el botón
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: controller.refreshConnection,
+                    child: Text('Refresh Connection'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      padding: EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  Text(controller.connectionStatus.value),
+                ],
+              ),
             ),
           ],
-        ),
+        )),
       ),
     );
   }

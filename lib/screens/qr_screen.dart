@@ -1,23 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
-import 'joystick_screen.dart';
+import 'package:get/get.dart';
+import 'package:mando/controller/qrcontroller.dart';
 
-class QRScreen extends StatefulWidget {
-  @override
-  _QRScreenState createState() => _QRScreenState();
-}
 
-class _QRScreenState extends State<QRScreen> {
-  Future<void> scanQR() async {
-    String qrResult = await FlutterBarcodeScanner.scanBarcode(
-        "#ff6666", "Cancel", true, ScanMode.QR);
-    if (qrResult != '-1') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => JoystickScreen(ipAddress: qrResult)),
-      );
-    }
-  }
+
+class QRScreen extends StatelessWidget {
+  final QRController controller = Get.put(QRController());
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +18,7 @@ class _QRScreenState extends State<QRScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
-              onPressed: () => scanQR(),
+              onPressed: controller.scanQR,
               child: Text('Scan QR Code to Connect'),
             ),
           ],
