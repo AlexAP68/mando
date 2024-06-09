@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:web_socket_channel/io.dart';
+import 'package:mando/utilitis/database_service.dart';
 
 class JoystickControlador extends GetxController {
   late IOWebSocketChannel channel;
@@ -10,9 +11,11 @@ class JoystickControlador extends GetxController {
   late String ipAddress;
   String? deviceIP;
   Timer? _reconnectTimer;
+  final DatabaseService databaseService = DatabaseService();
 
   JoystickControlador() {
     _getDeviceIP();
+    
   }
 
   Future<void> _getDeviceIP() async {
@@ -24,6 +27,14 @@ class JoystickControlador extends GetxController {
           return;
         }
       }
+    }
+  }
+
+  Future<void> _loadConnectionInfo() async {
+    final connectionInfo = await databaseService.getConnectionInfo();
+    if (connectionInfo != null) {
+      ipAddress = connectionInfo['ip_address'];
+      connect(connectionInfo['qr_result']);
     }
   }
 
@@ -74,6 +85,15 @@ class JoystickControlador extends GetxController {
       Get.snackbar('Error', 'Too many players connected');
       channel.sink.close();
       isConnected.value = false;
+    }
+  }
+
+  void sendPlayerInfo(String name, String imageBase64) {
+    if (isConnected.value && playerNumber.value > 0) {
+      channel.sink.add('name:$name');
+      channel.sink.add('image:$imageBase64');
+    } else {
+      print('WebSocket not connected or player number not assigned');
     }
   }
 

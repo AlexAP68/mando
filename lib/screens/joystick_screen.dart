@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_joystick/flutter_joystick.dart';
@@ -21,6 +23,12 @@ class _JoystickScreenState extends State<JoystickScreen> {
   void initState() {
     super.initState();
     _startSendingDirections();
+
+    final Map<String, dynamic> arguments = Get.arguments;
+    final name = arguments['name'] ?? 'Unknown';
+    final imageBase64 = arguments['imageBase64'] ?? '';
+
+    joystickController.sendPlayerInfo(name, imageBase64);
   }
 
   @override
@@ -46,8 +54,81 @@ class _JoystickScreenState extends State<JoystickScreen> {
     });
   }
 
+  Color _getBackgroundColor(int playerNumber) {
+    switch (playerNumber) {
+      case 1:
+        return Colors.white;
+      case 2:
+        return Colors.black;
+      case 3:
+        return Colors.red;
+      case 4:
+        return Colors.blue;
+      default:
+        return Colors.grey; // default background color
+    }
+  }
+
+  Color _getAppBarColor(int playerNumber) {
+    switch (playerNumber) {
+      case 1:
+        return Colors.white;
+      case 2:
+        return Colors.black;
+      case 3:
+        return Colors.red;
+      case 4:
+        return Colors.blue;
+      default:
+        return Colors.grey; // default app bar color
+    }
+  }
+
+  Color _getAppBarBrightness(int playerNumber) {
+    switch (playerNumber) {
+      case 2:
+        return Colors.black;
+      default:
+        return Colors.white;
+    }
+  }
+
+  Color _getAppBarTextColor(int playerNumber) {
+    switch (playerNumber) {
+      case 2:
+        return Colors.white;
+      default:
+        return Colors.black;
+    }
+  }
+
+  Future<bool> _onWillPop() async {
+    return (await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Confirmar Salida'),
+        content: Text('¿Quieres volver al menu de Inicio?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Get.toNamed("/"),
+            child: Text('Si'),
+          ),
+        ],
+      ),
+    )) ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final Map<String, dynamic> arguments = Get.arguments;
+    final name = arguments['name'] ?? 'Unknown';
+    final imageBase64 = arguments['imageBase64'] ?? '';
+    final image = arguments['image'] ?? '';
+
     // Forzar la orientación horizontal
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.landscapeRight,
@@ -55,74 +136,92 @@ class _JoystickScreenState extends State<JoystickScreen> {
     ]);
 
     return WillPopScope(
-      onWillPop: () async {
-        // Restaurar la orientación cuando se salga de la pantalla
-        SystemChrome.setPreferredOrientations([
-          DeviceOrientation.portraitUp,
-          DeviceOrientation.portraitDown,
-        ]);
-        return true;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Obx(() => Text('Unity Flutter Controller - Player ${joystickController.playerNumber.value}')),
-        ),
-        body: Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Joystick(
-                listener: (details) {
-                  double x = details.x > 0.5 ? 1.0 : details.x < -0.5 ? -1.0 : 0.0;
-                  double y = details.y > 0.5 ? 1.0 : details.y < -0.5 ? -1.0 : 0.0;
-
-                  // Priorizar la dirección principal del movimiento
-                  if (x != 0 && y != 0) {
-                    if (details.x.abs() > details.y.abs()) {
-                      y = 0.0;
-                    } else {
-                      x = 0.0;
-                    }
-                  }
-
-                  JoystickDirection newDirection = JoystickDirection(x, y);
-
-                    _updateDirection(newDirection);
-                    if (_timer == null || !_timer!.isActive) {
-                      _startSendingDirections();
-                    }
-                  
-                },
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      print('Sending bomb command');
-                      joystickController.sendBombCommand(); // Enviar comando de bomba
-                    },
-                    child: Text('Place Bomb'),
+      onWillPop: _onWillPop,
+      child: Obx(() {
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: _getAppBarColor(joystickController.playerNumber.value),
+            shadowColor: _getAppBarBrightness(joystickController.playerNumber.value),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Jugador ${joystickController.playerNumber.value} - $name',
+                  style: TextStyle(
+                    color: _getAppBarTextColor(joystickController.playerNumber.value),
                   ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () => joystickController.refreshConnection(),
-                    child: Text('Refresh Connection'),
-                  ),
-                  SizedBox(height: 20),
-                  Obx(() => Text(
-                    joystickController.isConnected.value ? 'Connected' : 'Disconnected',
-                    style: TextStyle(
-                      color: joystickController.isConnected.value ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
+                ),
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundImage: image.isNotEmpty ? FileImage(File(image)) : null,
+                      child: image.isEmpty ? Icon(Icons.person, size: 20) : null,
                     ),
-                  )),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          body: Container(
+            color: _getBackgroundColor(joystickController.playerNumber.value),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Joystick(
+                    listener: (details) {
+                      double x = details.x > 0.5 ? 1.0 : details.x < -0.5 ? -1.0 : 0.0;
+                      double y = details.y > 0.5 ? 1.0 : details.y < -0.5 ? -1.0 : 0.0;
+
+                      // Priorizar la dirección principal del movimiento
+                      if (x != 0 && y != 0) {
+                        if (details.x.abs() > details.y.abs()) {
+                          y = 0.0;
+                        } else {
+                          x = 0.0;
+                        }
+                      }
+
+                      JoystickDirection newDirection = JoystickDirection(x, y);
+
+                      _updateDirection(newDirection);
+                      if (_timer == null || !_timer!.isActive) {
+                        _startSendingDirections();
+                      }
+                    },
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          print('Sending bomb command');
+                          joystickController.sendBombCommand(); // Enviar comando de bomba
+                        },
+                        child: Text('Place Bomb'),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: () => joystickController.refreshConnection(),
+                        child: Text('Refresh Connection'),
+                      ),
+                      SizedBox(height: 20),
+                      Obx(() => Text(
+                        joystickController.isConnected.value ? 'Connected' : 'Disconnected',
+                        style: TextStyle(
+                          color: joystickController.isConnected.value ? Colors.green : Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
+                    ],
+                  ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }
