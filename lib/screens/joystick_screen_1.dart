@@ -11,7 +11,7 @@ void main() {
 class MyApp extends StatelessWidget {
   final channel = IOWebSocketChannel.connect('ws://192.168.1.214:7890');
 
-  MyApp({super.key});
+  MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {

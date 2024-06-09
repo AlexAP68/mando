@@ -37,16 +37,18 @@ class _JoystickScreenState extends State<JoystickScreen> {
     super.dispose();
   }
 
-  void _startSendingDirections() {
+void _startSendingDirections() {
     _timer?.cancel();
     _timer = Timer.periodic(Duration(milliseconds: 100), (timer) {
-      if (currentDirection != lastDirection) {
         print('Sending direction: x=${currentDirection.x}, y=${currentDirection.y}');
         joystickController.onDirectionChanged(currentDirection.x, currentDirection.y);
         lastDirection = JoystickDirection(currentDirection.x, currentDirection.y);
-      }
+
+        if (currentDirection.x == 0 && currentDirection.y == 0) {
+            _timer?.cancel();
+        }
     });
-  }
+}
 
   void _updateDirection(JoystickDirection newDirection) {
     setState(() {
