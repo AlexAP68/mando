@@ -196,19 +196,29 @@ void _startSendingDirections() {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      ElevatedButton(
-                        onPressed: () {
-                          print('Sending bomb command');
-                          joystickController.sendBombCommand(); // Enviar comando de bomba
-                        },
-                        child: Text('Place Bomb'),
-                      ),
-                      SizedBox(height: 20),
+                     ElevatedButton(
+                    onPressed: () {
+                      print('Sending bomb command');
+                      joystickController.sendBombCommand(); // Enviar comando de bomba
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purple, // background
+                      shape: CircleBorder(),
+                      padding: EdgeInsets.all(40), // Tamaño más grande
+                    ),
+                    child: Image.asset(
+                      'assets/bomba.png',
+                      width: 100,
+                      height: 100,
+                    ),
+                  ),
+
+                      SizedBox(height: 5),
                       ElevatedButton(
                         onPressed: () => joystickController.refreshConnection(),
                         child: Text('Refresh Connection'),
                       ),
-                      SizedBox(height: 20),
+                      SizedBox(height: 5),
                       Obx(() => Text(
                         joystickController.isConnected.value ? 'Connected' : 'Disconnected',
                         style: TextStyle(

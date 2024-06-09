@@ -10,28 +10,36 @@ class QRScreen extends StatelessWidget {
   final JoystickControlador joystickController = Get.put(JoystickControlador());
   final DatabaseService databaseService = DatabaseService();
 
-  Future<void> scanQR() async {
-    String qrResult = await FlutterBarcodeScanner.scanBarcode(
-        "#ff6666", "Cancel", true, ScanMode.QR);
-    if (qrResult != '-1') {
-      joystickController.connect(qrResult);
-      joystickController.startReconnectTimer();
-      if (joystickController.isConnected.value) {
-        // Obtener la IP del dispositivo
-        String ipAddress = await getDeviceIpAddress();
-        print(qrResult);
-        print(ipAddress);
-        // Guardar QR y IP en la base de datos
-        await databaseService.insertConnectionInfo(qrResult, ipAddress);
+ Future<void> scanQR() async {
+  String qrResult = await FlutterBarcodeScanner.scanBarcode(
+      "#ff6666", "Cancel", true, ScanMode.QR);
 
-        Get.toNamed('/playerName', arguments: {"qrResult": qrResult});
-      } else {
-        Get.snackbar('Error', 'Failed to connect to the server');
-      }
+  // Verificar que el QR contenga una IP válida
+  if (qrResult != '-1' && _isValidIPAddress(qrResult)) {
+    joystickController.connect(qrResult);
+    joystickController.startReconnectTimer();
+    if (joystickController.isConnected.value) {
+      // Obtener la IP del dispositivo
+      String ipAddress = await getDeviceIpAddress();
+      print(qrResult);
+      print(ipAddress);
+      // Guardar QR y IP en la base de datos
+      await databaseService.insertConnectionInfo(qrResult, ipAddress);
+
+      Get.toNamed('/playerName', arguments: {"qrResult": qrResult});
     } else {
-      Get.snackbar('Error', 'Invalid QR code');
+      Get.snackbar('Error', 'Failed to connect to the server');
     }
+  } else {
+    Get.snackbar('Error', 'Invalid QR code');
   }
+}
+
+bool _isValidIPAddress(String ip) {
+  final regex = RegExp(
+      r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$');
+  return regex.hasMatch(ip);
+}
 
   Future<String> getDeviceIpAddress() async {
     DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();

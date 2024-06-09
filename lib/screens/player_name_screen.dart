@@ -32,7 +32,7 @@ class PlayerNameScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
-                  'Player, introduce your name:',
+                  'Jugador, introduce tu nombre:',
                   style: TextStyle(fontSize: 30),
                 ),
                 const SizedBox(
@@ -48,7 +48,7 @@ class PlayerNameScreen extends StatelessWidget {
                       controller: _nameController,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Name is required';
+                          return 'Se requiere el nombre';
                         }
                         return null;
                       },
@@ -70,7 +70,7 @@ class PlayerNameScreen extends StatelessWidget {
               onPressed: () {
                 handleSubmit();
               },
-              child: const Text('Next'),
+              child: const Text('Siguiente'),
             ),
           )
         ],
