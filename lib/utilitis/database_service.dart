@@ -74,4 +74,10 @@ class DatabaseService {
     final db = await database;
     await db.delete('connection_info');
   }
+
+  Future<void> deleteall() async {
+    final db = await database;
+    await db.delete('connection_info');
+  }
+    
 }

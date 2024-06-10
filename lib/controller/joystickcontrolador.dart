@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:get/get.dart';
+import 'package:mando/utilitis/database_service.dart';
 import 'package:web_socket_channel/io.dart';
 
 class JoystickControlador extends GetxController {
@@ -11,6 +12,7 @@ class JoystickControlador extends GetxController {
   late String ipAddress;
   String? deviceIP;
   Timer? _reconnectTimer;
+  final DatabaseService databaseService = DatabaseService();
 
   JoystickControlador() {
     _getDeviceIP();
@@ -76,7 +78,9 @@ class JoystickControlador extends GetxController {
       channel.sink.close();
       isConnected.value = false;
     } else if (message == 'navigate_home') {
-      // Navegar de vuelta a la pantalla principal
+      channel.sink.close();
+      isConnected.value = false;
+       databaseService.clearConnectionInfo();
       Get.offAllNamed('/');
     }
   }
