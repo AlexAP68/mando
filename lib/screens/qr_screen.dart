@@ -81,10 +81,11 @@ bool _isValidIPAddress(String ip) {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset(
-                      'assets/bomba.png', // Cambia esto por el icono del QR
-                      width: width * 0.30,
+                    CircleAvatar(
+                      radius: 100,
+                      backgroundImage: const AssetImage('assets/movil.png'),
                     ),
+                    const SizedBox(width: 20),
                     SizedBox(
                       width: width * 0.35,
                       height: 70,

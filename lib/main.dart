@@ -21,8 +21,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'Unity Flutter Controller',
+      title: 'Inter Mando',
       initialRoute: '/',
+      debugShowCheckedModeBanner: false,
       getPages: [
         GetPage(name: '/', page: () => QRScreen()),
         GetPage(name: '/playerName', page: () => PlayerNameScreen()),
