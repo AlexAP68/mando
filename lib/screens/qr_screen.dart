@@ -55,6 +55,8 @@ bool _isValidIPAddress(String ip) {
       DeviceOrientation.landscapeLeft,
     ]);
 
+    joystickController.stopReconnectTimer();
+
     double width = MediaQuery.of(context).size.width;
 
     return WillPopScope(
@@ -94,7 +96,8 @@ bool _isValidIPAddress(String ip) {
                           backgroundColor: MaterialStateProperty.all<Color>(
                               const Color.fromARGB(255, 0, 194, 243)),
                         ),
-                        onPressed: () => scanQR(),
+                        onPressed: () => 
+                        scanQR(),
                         child: const Text(
                           'Comenzar',
                           style: TextStyle(fontSize: 30),

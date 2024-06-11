@@ -46,6 +46,7 @@ class PlayerNameScreen extends StatelessWidget {
                       autovalidateMode: AutovalidateMode.onUserInteraction,
                       keyboardType: TextInputType.name,
                       controller: _nameController,
+                      maxLength: 10,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Se requiere el nombre';

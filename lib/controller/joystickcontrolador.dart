@@ -31,13 +31,19 @@ class JoystickControlador extends GetxController {
   }
 
   void startReconnectTimer() {
-    _reconnectTimer = Timer.periodic(Duration(seconds: 5), (timer) {
-      if (!isConnected.value) {
-        print('Attempting to reconnect...');
-        connect(ipAddress);
-      }
-    });
-  }
+  _reconnectTimer = Timer.periodic(Duration(seconds: 5), (timer) {
+    if (!isConnected.value) {
+      print('Attempting to reconnect...');
+      connect(ipAddress);
+    }
+  });
+}
+
+void stopReconnectTimer() {
+  _reconnectTimer?.cancel();
+  _reconnectTimer = null;
+}
+
 
   void connect(String ipAddress) {
     this.ipAddress = ipAddress;
@@ -57,7 +63,6 @@ class JoystickControlador extends GetxController {
       isConnected.value = true;
       print('Connected to $ipAddress');
       if (_reconnectTimer == null) {
-        startReconnectTimer();
       }
       if (deviceIP != null) {
         channel.sink.add('register:$deviceIP');
@@ -79,10 +84,12 @@ class JoystickControlador extends GetxController {
       isConnected.value = false;
     } else if (message == 'navigate_home') {
       channel.sink.close();
+      stopReconnectTimer();
       isConnected.value = false;
-       databaseService.clearConnectionInfo();
+      databaseService.clearConnectionInfo();
       Get.offAllNamed('/');
-    }
+}
+
   }
 
   void sendPlayerInfo(String name, String imageBase64) {
